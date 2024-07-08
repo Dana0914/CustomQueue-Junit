@@ -8,67 +8,70 @@ public class Queue implements IQueue {
     int rear;
     int size;
 
-    public Queue() {
-        queue = new Object[size];
+    public Queue(int capacity) {
+        queue = new Object[capacity];
         front = 0;
-        rear = 0;
+        rear = -1;
         size = 0;
+
     }
     @Override
     public boolean add(Object o) {
-        if (size == queue.length) {
-            throw new RuntimeException("Queue is full");
+        if (isFull()) {
+            throw new IllegalArgumentException("Queue is full");
         }
         if (o == null) {
-            throw new NullPointerException("Null is not allowed");
+            throw new IllegalArgumentException("Null is not allowed");
         }
         for (int i = front; i <= rear; i++) {
             if (queue[i] == o) {
                 throw new IllegalArgumentException("Element already exists");
             }
         }
-        queue[rear] = o;
-        rear++;
+        queue[++rear] = o;
         size++;
         return true;
     }
 
     @Override
     public boolean offer(Object o) {
-        if (size <= queue.length) {
-            resize();
+        if (size == queue.length) {
+            //resizing the size of queue
+            resize(((queue.length * 3) / 2) + 1);
         }
         if (o == null) {
             return false;
         }
-        queue[rear] = o;
-        rear++;
+        queue[++rear] = o;
         size++;
         return true;
     }
 
     @Override
     public Object remove() {
-        if (size == 0) {
-            throw new IllegalArgumentException("Queue is empty");
-        }
-        if (front == rear) {
-            throw new IllegalArgumentException("Queue is empty");
+        if (isEmpty()) {
+            throw new NoSuchElementException("Queue is empty");
         }
         for (int i = front; i <= rear ; i++) {
             if (queue[i] != null) {
                 queue[i] = queue[i + 1];
             }
         }
+        rear--;
         size--;
+
+        //shrinking the size of queue
+        if (size > 0 && size == queue.length / 4) {
+            resize(queue.length / 2);
+        }
         return true;
 
     }
 
     @Override
     public Object poll() {
-        if (size == 0) {
-            System.out.println("Queue is empty");
+        if (isEmpty()) {
+            return false;
         }
         Object o = queue[front];
         if (o == null) {
@@ -79,16 +82,18 @@ public class Queue implements IQueue {
                 queue[i] = queue[i + 1];
             }
         }
+        rear--;
         size--;
+        //shrinking the size of queue
+        if (size > 0 && size == queue.length / 4) {
+            resize(queue.length / 2);
+        }
         return o;
     }
 
     @Override
     public Object element() {
-        if (size == 0) {
-            throw new NoSuchElementException("Empty queue");
-        }
-        if (front == rear) {
+        if (isEmpty()) {
             throw new NoSuchElementException("Empty queue");
         }
         if (queue[front] == null) {
@@ -99,10 +104,7 @@ public class Queue implements IQueue {
 
     @Override
     public Object peek() {
-        if (size == 0) {
-            return null;
-        }
-        if (front == rear) {
+        if (isEmpty()) {
             return null;
         }
         if (queue[front] == null) {
@@ -122,6 +124,11 @@ public class Queue implements IQueue {
     }
 
     @Override
+    public boolean isFull() {
+        return size == queue.length;
+    }
+
+    @Override
     public boolean contains(Object o) {
         for (int i = front; i <= rear; i++) {
             if (Objects.equals(queue[i], o)) {
@@ -134,13 +141,17 @@ public class Queue implements IQueue {
     @Override
     public boolean remove(Object o) {
         for (int i = front; i <= rear; i++) {
-            if (Objects.equals(queue[i], o)) {
+            if (queue[i] == o) {
                 queue[i] = null;
-                return true;
             }
-            size--;
         }
-        return false;
+        size--;
+        rear--;
+        //shrinking the size of queue
+        if (size > 0 && size == queue.length / 4) {
+            resize(queue.length / 2);
+        }
+        return true;
     }
 
     public void display() {
@@ -153,7 +164,7 @@ public class Queue implements IQueue {
     }
     @Override
     public void clear() {
-        if (size == 0) {
+        if (isEmpty()) {
             System.out.println("Empty queue");
         }
         for (int i = front; i <= rear; i++) {
@@ -165,8 +176,15 @@ public class Queue implements IQueue {
 
     }
 
-    public void resize() {
-        queue = Arrays.copyOf(queue, (size + 1) * 2);
+    public void resize(int newCapacity) {
+        Object[] newQueue = new Object[newCapacity];
+        for (int i = 0; i < size; i++) {
+            newQueue[i] = queue[i];
+        }
+        queue = newQueue;
+        front = 0;
+        rear = size-1;
+
 
     }
 
@@ -178,5 +196,18 @@ public class Queue implements IQueue {
                 ", rear=" + queue[rear] +
                 ", size=" + size +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Queue queue1 = (Queue) o;
+        return front == queue1.front && rear == queue1.rear && size == queue1.size && Objects.deepEquals(queue, queue1.queue);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(Arrays.hashCode(queue), front, rear, size);
     }
 }

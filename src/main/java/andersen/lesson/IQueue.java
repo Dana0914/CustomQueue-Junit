@@ -13,4 +13,5 @@ public interface IQueue {
     boolean contains(Object o);
     boolean remove(Object o);
     void clear();
+    boolean isFull();
 }
